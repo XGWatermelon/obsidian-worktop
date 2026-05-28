@@ -16,6 +16,13 @@ export interface TopicItem {
   path: string;
 }
 
+export function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function getTodayDiaryPath(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -37,10 +44,10 @@ export function getRecentFiles(app: App, days: number = 7): TFile[] {
     .slice(0, 20);
 }
 
-export function getTopicsByStatus(app: App, status: string): TopicItem[] {
+export function getTopicsByStatus(app: App, status: string, topicFolder: string = "事项"): TopicItem[] {
   const files = app.vault
     .getMarkdownFiles()
-    .filter((f) => f.path.startsWith("选题/"));
+    .filter((f) => f.path.startsWith(topicFolder + "/"));
 
   const topics: TopicItem[] = [];
 
@@ -64,11 +71,12 @@ export function getTopicsByStatus(app: App, status: string): TopicItem[] {
   return topics;
 }
 
-export function getOverdueTopics(app: App): TopicItem[] {
-  const today = new Date().toISOString().split("T")[0];
+export function getOverdueTopics(app: App, topicFolder: string = "事项"): TopicItem[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const files = app.vault
     .getMarkdownFiles()
-    .filter((f) => f.path.startsWith("选题/"));
+    .filter((f) => f.path.startsWith(topicFolder + "/"));
 
   const overdue: TopicItem[] = [];
 
@@ -78,18 +86,20 @@ export function getOverdueTopics(app: App): TopicItem[] {
       const fm = cache.frontmatter;
       if (
         fm.deadline &&
-        fm.deadline < today &&
         fm.status !== "已完成" &&
         fm.status !== "已放弃"
       ) {
-        overdue.push({
-          title: file.basename,
-          type: fm.type || "",
-          status: fm.status || "",
-          created: fm.created || "",
-          deadline: fm.deadline,
-          path: file.path,
-        });
+        const deadlineDate = new Date(fm.deadline);
+        if (!isNaN(deadlineDate.getTime()) && deadlineDate < today) {
+          overdue.push({
+            title: file.basename,
+            type: fm.type || "",
+            status: fm.status || "",
+            created: fm.created || "",
+            deadline: fm.deadline,
+            path: file.path,
+          });
+        }
       }
     }
   });
@@ -128,11 +138,11 @@ export function getActivityData(
 
   app.vault.getMarkdownFiles().forEach((file) => {
     if (file.stat.ctime > cutoff) {
-      const date = new Date(file.stat.ctime).toISOString().split("T")[0];
+      const date = toLocalDateStr(new Date(file.stat.ctime));
       data[date] = (data[date] || 0) + 1;
     }
     if (file.stat.mtime > cutoff && file.stat.mtime !== file.stat.ctime) {
-      const date = new Date(file.stat.mtime).toISOString().split("T")[0];
+      const date = toLocalDateStr(new Date(file.stat.mtime));
       data[date] = (data[date] || 0) + 1;
     }
   });
@@ -171,4 +181,52 @@ export function getSapModuleStats(
   });
 
   return stats;
+}
+
+// 获取文件夹统计
+export function getFolderStats(app: App): Record<string, number> {
+  const stats: Record<string, number> = {};
+  app.vault.getMarkdownFiles().forEach((file) => {
+    const topLevel = file.path.split("/")[0];
+    if (topLevel !== file.path) {
+      stats[topLevel] = (stats[topLevel] || 0) + 1;
+    }
+  });
+  return stats;
+}
+
+// 获取领域统计
+export function getDomainStats(app: App, domain: string, learningStatusField: string = "学习状态"): Record<string, number> {
+  const stats: Record<string, number> = {
+    待阅读: 0,
+    已阅读: 0,
+    已理解: 0,
+    已掌握: 0,
+  };
+
+  app.vault.getMarkdownFiles().forEach((file) => {
+    const cache = app.metadataCache.getFileCache(file);
+    if (cache?.frontmatter?.tags?.includes(domain)) {
+      const status = cache.frontmatter[learningStatusField];
+      if (status && status in stats) {
+        stats[status]++;
+      }
+    }
+  });
+
+  return stats;
+}
+
+// 获取领域的文件列表
+export function getDomainFiles(app: App, domain: string): TFile[] {
+  const files: TFile[] = [];
+
+  app.vault.getMarkdownFiles().forEach((file) => {
+    const cache = app.metadataCache.getFileCache(file);
+    if (cache?.frontmatter?.tags?.includes(domain)) {
+      files.push(file);
+    }
+  });
+
+  return files.sort((a, b) => b.stat.mtime - a.stat.mtime);
 }

@@ -1,8 +1,10 @@
-import { App } from "obsidian";
+import { App, TFile, Notice } from "obsidian";
 import {
   getLearningStats,
-  getSapModuleStats,
+  getDomainStats,
+  getDomainFiles,
   getActivityData,
+  toLocalDateStr,
 } from "../../utils/dataview";
 
 export class AnalysisTab {
@@ -25,63 +27,104 @@ export class AnalysisTab {
   }
 
   private renderHeatmap(): void {
-    const section = this.container.createDiv({
-      cls: "workspace-section workspace-heatmap-section",
-    });
+    const section = this.container.createDiv({ cls: "workspace-section" });
     section.createEl("h3", { text: "年度活跃度热力图" });
-
-    const heatmapContainer = section.createDiv({ cls: "workspace-heatmap" });
 
     const activityData = getActivityData(this.app, 365);
 
+    // 今天
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 364);
+    today.setHours(0, 0, 0, 0);
 
-    const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek);
+    // 从今年5月1日开始
+    const startYear = today.getMonth() >= 4 ? today.getFullYear() : today.getFullYear() - 1;
 
-    // 月份标签
-    const monthRow = heatmapContainer.createDiv({
-      cls: "workspace-heatmap-months",
-    });
-    let lastMonth = -1;
-    for (let i = 0; i < 53; i++) {
-      const weekDate = new Date(startDate);
-      weekDate.setDate(weekDate.getDate() + i * 7);
-      const month = weekDate.getMonth();
-      if (month !== lastMonth) {
-        const monthLabel = monthRow.createDiv({
-          cls: "workspace-heatmap-month",
-          text: this.getMonthName(month),
-        });
-        monthLabel.style.gridColumn = `${i + 1}`;
-        lastMonth = month;
-      }
+    // 创建主容器
+    const graphContainer = section.createDiv({ cls: "gh-calendar" });
+
+    // 渲染12个月（今年5月到明年4月）
+    for (let i = 0; i < 12; i++) {
+      const month = (4 + i) % 12; // 从5月开始（4是5月的索引）
+      const year = startYear + Math.floor((4 + i) / 12);
+
+      this.renderMonth(graphContainer, year, month, activityData, today);
     }
 
-    // 热力图网格
-    const grid = heatmapContainer.createDiv({ cls: "workspace-heatmap-grid" });
+    // 图例
+    const legend = section.createDiv({ cls: "gh-legend" });
+    legend.createSpan({ text: "少" });
+    for (let i = 0; i <= 4; i++) {
+      legend.createSpan({ cls: `gh-legend-cell gh-level-${i}` });
+    }
+    legend.createSpan({ text: "多" });
+  }
 
-    for (let week = 0; week < 53; week++) {
-      const weekCol = grid.createDiv({ cls: "workspace-heatmap-week" });
+  private renderMonth(
+    container: HTMLElement,
+    year: number,
+    month: number,
+    activityData: Record<string, number>,
+    today: Date
+  ): void {
+    const monthDiv = container.createDiv({ cls: "gh-month" });
 
-      for (let day = 0; day < 7; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(currentDate.getDate() + week * 7 + day);
+    // 月份标签
+    const label = monthDiv.createDiv({ cls: "gh-month-label" });
+    label.textContent = `${year}年${this.getMonthName(month)}`;
 
-        if (currentDate > today) {
-          weekCol.createDiv({ cls: "workspace-heatmap-day future" });
-          continue;
+    // 网格容器
+    const grid = monthDiv.createDiv({ cls: "gh-month-grid" });
+
+    // 行标签
+    const dayLabels = grid.createDiv({ cls: "gh-day-labels" });
+    const labels = ["一", "二", "三", "四", "五", "六", "日"];
+    labels.forEach((l) => {
+      dayLabels.createDiv({ cls: "gh-day-label", text: l });
+    });
+
+    // 格子区域
+    const columns = grid.createDiv({ cls: "gh-columns" });
+
+    // 获取本月第一天
+    const firstDay = new Date(year, month, 1);
+    // 获取本月最后一天
+    const lastDay = new Date(year, month + 1, 0);
+
+    // 对齐到周一（一周从周一开始）
+    const startDayOfWeek = firstDay.getDay();
+    const offset = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+    // 从本月第一周的周一开始
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - offset);
+
+    // 按周渲染
+    const currentDate = new Date(startDate);
+    while (currentDate.getMonth() === month || currentDate < firstDay) {
+      const column = columns.createDiv({ cls: "gh-column" });
+
+      // 一周7天
+      for (let d = 0; d < 7; d++) {
+        const cell = column.createDiv({ cls: "gh-cell" });
+
+        // 只渲染本月的日期
+        if (currentDate.getMonth() === month) {
+          const dateStr = toLocalDateStr(currentDate);
+          const count = activityData[dateStr] || 0;
+          const level = this.getActivityLevel(count);
+          cell.addClass(`gh-level-${level}`);
+          cell.title = `${dateStr}: ${count} 篇笔记`;
+        } else {
+          // 非本月日期显示为空
+          cell.addClass("gh-empty");
         }
 
-        const dateStr = currentDate.toISOString().split("T")[0];
-        const count = activityData[dateStr] || 0;
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
 
-        const cell = weekCol.createDiv({
-          cls: `workspace-heatmap-day level-${this.getActivityLevel(count)}`,
-        });
-        cell.title = `${dateStr}: ${count} 篇笔记`;
+      // 如果已经过了本月，跳出循环
+      if (currentDate > lastDay && currentDate.getDay() === 1) {
+        break;
       }
     }
   }
@@ -95,7 +138,7 @@ export class AnalysisTab {
   }
 
   private getMonthName(month: number): string {
-    const names = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+    const names = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
     return names[month];
   }
 
@@ -137,17 +180,30 @@ export class AnalysisTab {
 
   private renderModuleCoverage(): void {
     const section = this.container.createDiv({ cls: "workspace-section" });
-    section.createEl("h3", { text: "模块覆盖" });
+    section.createEl("h3", { text: "领域覆盖" });
 
-    const stats = getSapModuleStats(this.app);
+    // 从配置中获取领域列表
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const domains = settings?.domains || ["AI", "SAP"];
+    const learningStatusField = settings?.fieldNames?.learningStatus || "学习状态";
+
+    if (domains.length === 0) {
+      section.createEl("p", {
+        cls: "workspace-empty-text",
+        text: "暂未配置领域，请在设置中添加",
+      });
+      return;
+    }
+
     const grid = section.createDiv({ cls: "workspace-module-grid" });
 
-    Object.entries(stats).forEach(([mod, statusCounts]) => {
-      const card = grid.createDiv({ cls: "workspace-module-card" });
-      card.createEl("h4", { text: mod });
+    domains.forEach((domain: string) => {
+      const stats = getDomainStats(this.app, domain, learningStatusField);
+      const total = Object.values(stats).reduce((a, b) => a + b, 0);
+      const mastered = stats["已掌握"] || 0;
 
-      const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-      const mastered = statusCounts["已掌握"] || 0;
+      const card = grid.createDiv({ cls: "workspace-module-card" });
+      card.createEl("h4", { text: domain });
 
       card.createDiv({
         cls: "workspace-module-progress",
@@ -161,16 +217,103 @@ export class AnalysisTab {
       if (total > 0) {
         progressFill.style.width = `${(mastered / total) * 100}%`;
       }
+
+      // 点击生成领域统计文档
+      card.addEventListener("click", () => {
+        this.generateDomainDoc(domain, learningStatusField);
+      });
     });
+  }
+
+  // 生成领域统计文档
+  private async generateDomainDoc(domain: string, learningStatusField: string): Promise<void> {
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+    const docPath = `${workspaceRoot}/领域统计-${domain}.md`;
+
+    const stats = getDomainStats(this.app, domain, learningStatusField);
+    const files = getDomainFiles(this.app, domain);
+    const today = new Date();
+
+    let content = `# ${domain} 领域统计\n\n`;
+    content += `> 生成时间：${today.toLocaleString()}\n\n`;
+
+    // 统计概览
+    content += `## 统计概览\n\n`;
+    content += `| 状态 | 数量 |\n`;
+    content += `|------|------|\n`;
+
+    const statusColors: Record<string, string> = {
+      待阅读: "⬜",
+      已阅读: "🟩",
+      已理解: "🟦",
+      已掌握: "🟪",
+    };
+
+    Object.entries(stats).forEach(([status, count]) => {
+      content += `| ${statusColors[status] || ""} ${status} | ${count} |\n`;
+    });
+
+    const total = Object.values(stats).reduce((a, b) => a + b, 0);
+    content += `| **总计** | **${total}** |\n\n`;
+
+    // 按状态分组列出文件
+    content += `---\n\n`;
+
+    const statusGroups: Record<string, TFile[]> = {
+      待阅读: [],
+      已阅读: [],
+      已理解: [],
+      已掌握: [],
+    };
+
+    files.forEach((file) => {
+      const cache = this.app.metadataCache.getFileCache(file);
+      const status = cache?.frontmatter?.[learningStatusField];
+      if (status && status in statusGroups) {
+        statusGroups[status].push(file);
+      }
+    });
+
+    Object.entries(statusGroups).forEach(([status, statusFiles]) => {
+      content += `## ${status}\n\n`;
+      if (statusFiles.length === 0) {
+        content += `暂无\n\n`;
+      } else {
+        statusFiles.forEach((file) => {
+          content += `- [[${file.path}|${file.basename}]]\n`;
+        });
+        content += `\n`;
+      }
+    });
+
+    // 创建或更新文档
+    try {
+      const existing = this.app.vault.getAbstractFileByPath(docPath);
+      if (existing) {
+        await this.app.vault.modify(existing as TFile, content);
+      } else {
+        // 确保文件夹存在
+        const folder = docPath.split("/").slice(0, -1).join("/");
+        if (!this.app.vault.getAbstractFileByPath(folder)) {
+          await this.app.vault.createFolder(folder);
+        }
+        await this.app.vault.create(docPath, content);
+      }
+      this.app.workspace.openLinkText(docPath, "");
+    } catch (error) {
+      new Notice(`生成文档失败: ${error.message}`);
+      console.error("生成文档失败:", error);
+    }
   }
 
   private renderObjectStats(): void {
     const section = this.container.createDiv({ cls: "workspace-section" });
-    section.createEl("h3", { text: "对象图谱" });
+    section.createEl("h3", { text: "节点图谱" });
 
     const objectFiles = this.app.vault
       .getMarkdownFiles()
-      .filter((f) => f.path.startsWith("对象/"));
+      .filter((f) => f.path.startsWith("节点/"));
 
     const statEl = section.createDiv({ cls: "workspace-object-stats" });
     statEl.createEl("p", {

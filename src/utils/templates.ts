@@ -1,5 +1,6 @@
 import { moment } from "obsidian";
 
+// 日记模板 - 记录今天做了什么
 export function getDiaryTemplate(): string {
   const today = moment().format("YYYY-MM-DD");
   return `---
@@ -7,16 +8,9 @@ tags:
   - 日记
 type: 日记
 date: ${today}
-学习状态: 已阅读
 ---
 
 # ${today} 日记
-
-## 今日要事
-
-- [ ] 任务 1
-- [ ] 任务 2
-- [ ] 任务 3
 
 ## 今日记录
 
@@ -37,37 +31,56 @@ date: ${today}
 `;
 }
 
-export function getTopicTemplate(type: string, title: string): string {
+// 日计划模板 - 今天要做什么
+export function getDailyPlanTemplate(weeklyPlanPath?: string): string {
   const today = moment().format("YYYY-MM-DD");
+  const weekNum = moment().format("WW");
+  const year = moment().format("YYYY");
+  const planPath = weeklyPlanPath || `周计划/${year}-W${weekNum}-本周计划.md`;
+
   return `---
 tags:
-  - 选题
-type: ${type}
-status: 待评估
-created: ${today}
-updated: ${today}
-deadline: ""
-学习状态: 待阅读
+  - 计划
+  - 日计划
+type: 日计划
+date: ${today}
+weekly_plan: "[[${planPath}]]"
 ---
 
-# ${title}
+# ${today} 日计划
 
-## 背景
+> 本周计划：[[${planPath}]]
 
+## 今日要事
 
-## 目标
+- [ ] 任务 1
+- [ ] 任务 2
+- [ ] 任务 3
 
+## 执行记录
 
-## 进展记录
+### 上午
 
-### ${today}
-- 创建选题
+-
 
-## 参考资料
+### 下午
+
+-
+
+### 晚上
+
+-
+
+## 完成情况
+
+- 完成：
+- 未完成：
+- 原因：
 
 `;
 }
 
+// 周计划模板 - 本周要做什么
 export function getWeeklyPlanTemplate(): string {
   const weekNum = moment().format("WW");
   const year = moment().format("YYYY");
@@ -78,12 +91,12 @@ export function getWeeklyPlanTemplate(): string {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const day = moment().startOf("isoWeek").add(i, "days");
-    days.push(`### ${day.format("dddd")} (${day.format("MM.DD")})`);
+    days.push(`### ${day.format("dddd")} - ${day.format("MM.DD")}`);
   }
 
   return `---
 tags:
-  - 功能
+  - 计划
   - 周计划
 type: 周计划
 week: "${weekId}"
@@ -98,24 +111,20 @@ status: 进行中
 
 ## 本周目标
 
-- [ ] 目标 1
-- [ ] 目标 2
-- [ ] 目标 3
-
-## SAP 学习
+### SAP 学习
 
 - [ ] 学习内容 1
 - [ ] 学习内容 2
 
-## 项目任务
+### 项目任务
 
 - [ ] 任务 1
 - [ ] 任务 2
 
-## 写作/选题
+### 写作/事项
 
-- [ ] 选题 1
-- [ ] 选题 2
+- [ ] 事项 1
+- [ ] 事项 2
 
 ## 每日进展
 
@@ -134,18 +143,58 @@ ${days.map((d) => `${d}\n- `).join("\n")}
 `;
 }
 
-export function getDiaryPath(): string {
-  return `日记/${moment().format("YYYY-MM-DD")}.md`;
+// 事项模板
+export function getTopicTemplate(
+  type: string,
+  title: string,
+  status: string = "待评估",
+  learningStatus: string = "待阅读",
+  deadline: string = ""
+): string {
+  const today = moment().format("YYYY-MM-DD");
+  return `---
+tags:
+  - 事项
+type: ${type}
+status: ${status}
+created: ${today}
+updated: ${today}
+deadline: "${deadline}"
+学习状态: ${learningStatus}
+---
+
+# ${title}
+
+## 背景
+
+
+## 目标
+
+
+## 进展记录
+
+### ${today}
+- 创建事项
+
+## 参考资料
+
+`;
 }
 
-export function getWeeklyPlanPath(): string {
+// 路径生成函数（需要传入 workspaceRoot）
+export function getDailyPlanPath(workspaceRoot: string = "工作台"): string {
+  const today = moment().format("YYYY-MM-DD");
+  return `${workspaceRoot}/日计划/${today}-日计划.md`;
+}
+
+export function getWeeklyPlanPath(workspaceRoot: string = "工作台"): string {
   const weekNum = moment().format("WW");
   const year = moment().format("YYYY");
-  return `日记/${year}-W${weekNum}-本周计划.md`;
+  return `${workspaceRoot}/周计划/${year}-W${weekNum}-本周计划.md`;
 }
 
-export function getTopicPath(title: string): string {
+export function getTopicPath(title: string, topicFolder: string = "事项"): string {
   const today = moment().format("YYYY-MM-DD");
   const safeTitle = title.replace(/[\/\\:*?"<>|]/g, "-");
-  return `选题/${today}-${safeTitle}.md`;
+  return `${topicFolder}/${today}-${safeTitle}.md`;
 }

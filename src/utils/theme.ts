@@ -1,47 +1,41 @@
+import { getThemeById, Theme, ThemeColors } from "../themes";
+
 export type ThemeMode = "dark" | "light";
 
-export interface ThemeColors {
-  background: string;
-  cardBackground: string;
-  primary: string;
-  secondary: string;
-  gray: string;
-  text: string;
-  border: string;
-  hover: string;
-}
-
-const darkTheme: ThemeColors = {
-  background: "#1E1E1E",
-  cardBackground: "#2D2D2D",
-  primary: "#77DD77",
-  secondary: "#CBC3E3",
-  gray: "#333333",
-  text: "#E0E0E0",
-  border: "#404040",
-  hover: "#3D3D3D",
-};
-
-const lightTheme: ThemeColors = {
-  background: "#FFFFFF",
-  cardBackground: "#F5F5F5",
-  primary: "#4CAF50",
-  secondary: "#9C27B0",
-  gray: "#E0E0E0",
-  text: "#333333",
-  border: "#D0D0D0",
-  hover: "#E8E8E8",
-};
-
-export function getThemeColors(mode: ThemeMode): ThemeColors {
-  return mode === "dark" ? darkTheme : lightTheme;
-}
-
+// 检测当前主题模式
 export function detectTheme(): ThemeMode {
   const isDark = document.body.classList.contains("theme-dark");
   return isDark ? "dark" : "light";
 }
 
-export function applyTheme(container: HTMLElement, mode: ThemeMode): void {
+// 应用主题
+export function applyTheme(container: HTMLElement, mode: ThemeMode, themeId?: string): void {
   container.setAttribute("data-theme", mode);
+
+  // 获取主题配置
+  const theme = themeId ? getThemeById(themeId) : getThemeById("green-dark");
+  if (!theme) return;
+
+  // 获取对应模式的颜色
+  const colors: ThemeColors = mode === "dark" ? theme.dark : theme.light;
+
+  // 应用 CSS 变量
+  container.style.setProperty("--ws-bg", colors.bg);
+  container.style.setProperty("--ws-card-bg", colors.cardBg);
+  container.style.setProperty("--ws-primary", colors.primary);
+  container.style.setProperty("--ws-secondary", colors.secondary);
+  container.style.setProperty("--ws-gray", colors.gray);
+  container.style.setProperty("--ws-text", colors.text);
+  container.style.setProperty("--ws-border", colors.border);
+  container.style.setProperty("--ws-hover", colors.hover);
+}
+
+// 获取主题颜色
+export function getThemeColors(mode: ThemeMode, themeId?: string): ThemeColors {
+  const theme = themeId ? getThemeById(themeId) : getThemeById("green-dark");
+  if (!theme) {
+    // 返回默认主题
+    return mode === "dark" ? getThemeById("green-dark")!.dark : getThemeById("green-dark")!.light;
+  }
+  return mode === "dark" ? theme.dark : theme.light;
 }

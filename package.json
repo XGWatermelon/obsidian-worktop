@@ -17,5 +17,8 @@
     "obsidian": "latest",
     "tslib": "2.6.2",
     "typescript": "5.3.3"
+  },
+  "dependencies": {
+    "cal-heatmap": "^4.2.4"
   }
 }
