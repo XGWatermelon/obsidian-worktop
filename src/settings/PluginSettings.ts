@@ -31,6 +31,36 @@ export class WorkspaceSettingTab extends PluginSettingTab {
 
   // ==================== 基础配置 ====================
   private renderBasicSettings(containerEl: HTMLElement): void {
+    // 应用名称
+    containerEl.createEl("h3", { text: "应用名称" });
+
+    new Setting(containerEl)
+      .setName("插件名称")
+      .setDesc("显示在 Obsidian 插件列表中的名称")
+      .addText((text) =>
+        text
+          .setPlaceholder("个人工作台")
+          .setValue(this.config.basic.app.name)
+          .onChange(async (value) => {
+            this.config.basic.app.name = value || "个人工作台";
+            await this.plugin.saveConfig();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("视图标题")
+      .setDesc("工作台视图顶部显示的标题")
+      .addText((text) =>
+        text
+          .setPlaceholder("个人工作台")
+          .setValue(this.config.basic.app.viewTitle)
+          .onChange(async (value) => {
+            this.config.basic.app.viewTitle = value || "个人工作台";
+            await this.plugin.saveConfig();
+            this.plugin.refreshWorkspaceView();
+          })
+      );
+
     // 打开方式
     containerEl.createEl("h3", { text: "打开方式" });
 

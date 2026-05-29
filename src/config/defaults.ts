@@ -8,7 +8,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     app: {
       name: "工作台",
       icon: "layout-dashboard",
-      viewTitle: "智能工作台",
+      viewTitle: "个人工作台",
     },
 
     ui: {

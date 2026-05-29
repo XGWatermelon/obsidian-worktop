@@ -1,4 +1,4 @@
-# Obsidian 智能工作台插件
+# Obsidian 个人工作台插件
 
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple)](https://obsidian.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -30,7 +30,7 @@
 1. 前往 [Releases 页面](https://github.com/XGWatermelon/Obsidian-workhouse/releases)，下载最新版本的 `main.js`、`manifest.json`、`styles.css`
 2. 在你的 Obsidian 仓库中创建文件夹 `.obsidian/plugins/worktop/`
 3. 将下载的三个文件放入该文件夹
-4. 打开 Obsidian → 设置 → 第三方插件 → 找到「智能工作台」→ 启用
+4. 打开 Obsidian → 设置 → 第三方插件 → 找到「个人工作台」→ 启用
 
 > **注意**：请从 Release 页面下载，不要下载仓库源码压缩包（源码需要构建才能使用）。
 

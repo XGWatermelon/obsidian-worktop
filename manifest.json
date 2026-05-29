@@ -1,6 +1,6 @@
 {
   "id": "obsidian-workspace-plugin",
-  "name": "智能工作台",
+  "name": "个人工作台",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "智能工作台主页，包含状态栏、快捷操作、标签页导航",
