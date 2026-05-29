@@ -23,11 +23,14 @@
 
 ## 安装
 
-### 手动安装
+### 从 Release 安装（推荐）
 
-1. 下载 `main.js`、`manifest.json`、`styles.css`
-2. 复制到 `<你的仓库>/.obsidian/plugins/worktop/`
-3. 在 Obsidian 中启用插件：设置 → 第三方插件 → 找到「智能工作台」→ 启用
+1. 前往 [Releases 页面](https://github.com/XGWatermelon/Obsidian-workhouse/releases)，下载最新版本的 `main.js`、`manifest.json`、`styles.css`
+2. 在你的 Obsidian 仓库中创建文件夹 `.obsidian/plugins/worktop/`
+3. 将下载的三个文件放入该文件夹
+4. 打开 Obsidian → 设置 → 第三方插件 → 找到「智能工作台」→ 启用
+
+> **注意**：请从 Release 页面下载，不要下载仓库源码压缩包（源码需要构建才能使用）。
 
 ### 从源码构建
 
@@ -36,6 +39,7 @@ git clone https://github.com/XGWatermelon/Obsidian-workhouse.git
 cd Obsidian-workhouse
 npm install
 npm run build
+# 构建产物：main.js（项目根目录）
 ```
 
 ---
@@ -119,12 +123,17 @@ npm run build
 │   ├── 日计划/
 │   ├── 周计划/
 │   ├── 事项/
+│   │   ├── 任务/
+│   │   ├── 想法/
+│   │   ├── 项目/
+│   │   ├── 写作/
+│   │   └── 学习/
 │   ├── 节点/
 │   ├── 待整理/
-│   │   ├── 收藏摘录/
-│   │   └── 待归类/
+│   │   └── 收藏/
 │   ├── 清单/
 │   └── 常用入口.md
+├── work-top-demo/             ← 领域/模块示例文件
 ├── （用户自己的其他文件夹）    ← 用户管理，插件不碰
 └── .obsidian/
 ```
@@ -165,4 +174,4 @@ npm run build
 
 ---
 
-*最后更新：2026-05-29*
+*最后更新：2026-05-30*
