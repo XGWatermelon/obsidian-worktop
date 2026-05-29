@@ -78,16 +78,27 @@ export class ActionTab {
 
   // 获取保存的链接
   private getQuickLinks(): { label: string; path: string }[] {
-    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
-    return settings?.quickLinks || [];
+    try {
+      const plugin = (this.app as any).plugins?.getPlugin?.("worktop");
+      if (plugin?.settings?.quickLinks) {
+        return plugin.settings.quickLinks;
+      }
+    } catch (e) {
+      console.error("获取快捷链接配置失败:", e);
+    }
+    return [];
   }
 
   // 保存链接
   private async saveQuickLinks(links: { label: string; path: string }[]): Promise<void> {
-    const plugin = (this.app as any).plugins?.plugins?.["worktop"];
-    if (plugin?.settings) {
-      plugin.settings.quickLinks = links;
-      await plugin.saveSettings();
+    try {
+      const plugin = (this.app as any).plugins?.getPlugin?.("worktop");
+      if (plugin?.settings) {
+        plugin.settings.quickLinks = links;
+        await plugin.saveSettings();
+      }
+    } catch (e) {
+      console.error("保存快捷链接配置失败:", e);
     }
   }
 
