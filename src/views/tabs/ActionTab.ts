@@ -41,71 +41,114 @@ export class ActionTab {
     const addBtn = header.createDiv({ cls: "workspace-add-btn", text: "+" });
     addBtn.addEventListener("click", () => this.addQuickLink());
 
-    // 获取保存的链接
-    const links = this.getQuickLinks();
+    // 异步获取保存的链接
+    this.getQuickLinks().then(links => {
+      if (links.length === 0) {
+        card.createEl("p", {
+          cls: "workspace-empty-text",
+          text: "点击 + 添加常用文档链接",
+        });
+      } else {
+        const list = card.createEl("ul", { cls: "workspace-quick-links" });
+        links.forEach((link, index) => {
+          const item = list.createEl("li", { cls: "workspace-quick-link-item" });
+          const linkEl = item.createEl("a", {
+            text: link.label,
+            href: "#",
+          });
+          linkEl.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (fileExists(this.app, link.path)) {
+              this.app.workspace.openLinkText(link.path, "");
+            } else {
+              new Notice(`文件不存在: ${link.path}`);
+            }
+          });
 
-    if (links.length === 0) {
-      card.createEl("p", {
-        cls: "workspace-empty-text",
-        text: "点击 + 添加常用文档链接",
-      });
-    } else {
-      const list = card.createEl("ul", { cls: "workspace-quick-links" });
-      links.forEach((link, index) => {
-        const item = list.createEl("li", { cls: "workspace-quick-link-item" });
-        const linkEl = item.createEl("a", {
-          text: link.label,
-          href: "#",
+          // 删除按钮
+          const deleteBtn = item.createDiv({ cls: "workspace-delete-btn", text: "×" });
+          deleteBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            await this.deleteQuickLink(index);
+          });
         });
-        linkEl.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (fileExists(this.app, link.path)) {
-            this.app.workspace.openLinkText(link.path, "");
-          } else {
-            new Notice(`文件不存在: ${link.path}`);
-          }
-        });
+      }
+    });
+  }
 
-        // 删除按钮
-        const deleteBtn = item.createDiv({ cls: "workspace-delete-btn", text: "×" });
-        deleteBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.deleteQuickLink(index);
-        });
-      });
-    }
+  // 获取常用入口文档路径
+  private getQuickLinksDocPath(): string {
+    const settings = (this.app as any).plugins?.getPlugin?.("worktop")?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+    return `${workspaceRoot}/常用入口.md`;
   }
 
   // 获取保存的链接
-  private getQuickLinks(): { label: string; path: string }[] {
-    try {
-      const plugin = (this.app as any).plugins?.getPlugin?.("worktop");
-      if (plugin?.settings?.quickLinks) {
-        return plugin.settings.quickLinks;
-      }
-    } catch (e) {
-      console.error("获取快捷链接配置失败:", e);
+  private async getQuickLinks(): Promise<{ label: string; path: string }[]> {
+    const docPath = this.getQuickLinksDocPath();
+
+    if (!fileExists(this.app, docPath)) {
+      return [];
     }
-    return [];
+
+    try {
+      const file = this.app.vault.getAbstractFileByPath(docPath) as TFile;
+      const content = await this.app.vault.read(file);
+      const links: { label: string; path: string }[] = [];
+
+      // 解析文档内容
+      const lines = content.split("\n");
+      for (const line of lines) {
+        // 格式：- [[路径|显示名称]]
+        const match = line.match(/^- \[\[([^|]+)\|(.+)\]\]$/);
+        if (match) {
+          links.push({ path: match[1], label: match[2] });
+        }
+      }
+
+      return links;
+    } catch (e) {
+      console.error("读取常用入口文档失败:", e);
+      return [];
+    }
   }
 
   // 保存链接
   private async saveQuickLinks(links: { label: string; path: string }[]): Promise<void> {
+    const docPath = this.getQuickLinksDocPath();
+    const settings = (this.app as any).plugins?.getPlugin?.("worktop")?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+
+    // 确保工作台文件夹存在
+    if (!fileExists(this.app, workspaceRoot)) {
+      await this.app.vault.createFolder(workspaceRoot);
+    }
+
+    // 生成文档内容
+    let content = `# 常用入口\n\n`;
+    content += `> 快速访问常用文档\n\n`;
+
+    links.forEach(link => {
+      content += `- [[${link.path}|${link.label}]]\n`;
+    });
+
+    // 创建或更新文档
     try {
-      const plugin = (this.app as any).plugins?.getPlugin?.("worktop");
-      if (plugin?.settings) {
-        plugin.settings.quickLinks = links;
-        await plugin.saveSettings();
+      const existing = this.app.vault.getAbstractFileByPath(docPath);
+      if (existing) {
+        await this.app.vault.modify(existing as TFile, content);
+      } else {
+        await this.app.vault.create(docPath, content);
       }
     } catch (e) {
-      console.error("保存快捷链接配置失败:", e);
+      console.error("保存常用入口文档失败:", e);
     }
   }
 
   // 添加链接
   private addQuickLink(): void {
     const modal = new FileSearchModal(this.app, async (path: string) => {
-      const links = this.getQuickLinks();
+      const links = await this.getQuickLinks();
       const label = path.split("/").pop()?.replace(".md", "") || path;
       links.push({ label, path });
       await this.saveQuickLinks(links);
@@ -116,7 +159,7 @@ export class ActionTab {
 
   // 删除链接
   private async deleteQuickLink(index: number): Promise<void> {
-    const links = this.getQuickLinks();
+    const links = await this.getQuickLinks();
     links.splice(index, 1);
     await this.saveQuickLinks(links);
     this.render(); // 刷新
