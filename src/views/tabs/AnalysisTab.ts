@@ -328,12 +328,38 @@ export class AnalysisTab {
     const docPath = `${getFolderPath(this.app, "generatedDocs")}/模块/模块清单-${moduleName}.md`;
     const learningStatuses = getStatuses(this.app, "learning");
 
-    const domainFiles = getDomainFiles(this.app, domainName);
-    const moduleFiles = domainFiles.filter((file) => {
+    // 和 getDomainModuleStats 保持一致的 tag 匹配逻辑
+    const domains = getDomains(this.app);
+    const domain = domains.find((d) => d.name === domainName);
+    const domainLower = domainName.toLowerCase();
+
+    const allFiles = this.app.vault.getMarkdownFiles();
+    const moduleFiles: TFile[] = [];
+
+    allFiles.forEach((file) => {
       const cache = this.app.metadataCache.getFileCache(file);
-      const mod = cache?.frontmatter?.module;
-      if (moduleName === "未分类") return !mod;
-      return mod === moduleName;
+      const tags: string[] = cache?.frontmatter?.tags || [];
+      const tagsLower = tags.map((t) => String(t).toLowerCase());
+
+      if (!tagsLower.includes(domainLower)) return;
+
+      if (moduleName === "未分类") {
+        // 未分类：有领域 tag 但没有匹配任何模块 tag
+        const hasModuleTag = domain
+          ? domain.modules.some((m) => tagsLower.includes(m.name.toLowerCase()) || tagsLower.includes(m.id.toLowerCase()))
+          : false;
+        if (!hasModuleTag) moduleFiles.push(file);
+      } else {
+        // 普通模块：tag 中包含模块名或模块 id
+        if (tagsLower.includes(moduleName.toLowerCase())) {
+          moduleFiles.push(file);
+        } else if (domain) {
+          const mod = domain.modules.find((m) => m.name === moduleName);
+          if (mod && tagsLower.includes(mod.id.toLowerCase())) {
+            moduleFiles.push(file);
+          }
+        }
+      }
     });
 
     let content = `# ${moduleName} 模块清单\n\n`;
