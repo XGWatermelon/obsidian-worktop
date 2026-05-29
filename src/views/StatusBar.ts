@@ -228,8 +228,11 @@ export class StatusBar {
 
   // 获取已完成的事项
   private getCompletedTopics(): any[] {
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const topicFolder = settings?.topicFolder || "事项";
+
     const files = this.app.vault.getMarkdownFiles()
-      .filter((f) => f.path.startsWith("事项/"));
+      .filter((f) => f.path.startsWith(topicFolder + "/"));
     const completed: any[] = [];
 
     files.forEach((file) => {
@@ -244,8 +247,11 @@ export class StatusBar {
 
   // 获取进行中的事项
   private getActiveTopics(): any[] {
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const topicFolder = settings?.topicFolder || "事项";
+
     const files = this.app.vault.getMarkdownFiles()
-      .filter((f) => f.path.startsWith("事项/"));
+      .filter((f) => f.path.startsWith(topicFolder + "/"));
     const active: any[] = [];
 
     files.forEach((file) => {
@@ -297,10 +303,13 @@ export class StatusBar {
     let total = 0;
     const now = new Date();
 
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+
     // 1. 统计周计划文件中的任务
     const weekNum = this.getWeekNumber(now);
     const year = now.getFullYear();
-    const planPath = `周计划/${year}-W${weekNum.toString().padStart(2, "0")}-本周计划.md`;
+    const planPath = `${workspaceRoot}/周计划/${year}-W${weekNum.toString().padStart(2, "0")}-本周计划.md`;
     if (fileExists(this.app, planPath)) {
       const file = this.app.vault.getAbstractFileByPath(planPath) as TFile;
       const content = await this.app.vault.cachedRead(file);
@@ -309,7 +318,7 @@ export class StatusBar {
       total += tasks.total;
     }
 
-    // 2. 统计本周7天日记中的任务
+    // 2. 统计本周7天日计划中的任务
     const dayOfWeek = now.getDay();
     const monday = new Date(now);
     monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
@@ -317,7 +326,7 @@ export class StatusBar {
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const path = `日记/${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}.md`;
+      const path = `${workspaceRoot}/日计划/${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}-日计划.md`;
       if (fileExists(this.app, path)) {
         const file = this.app.vault.getAbstractFileByPath(path) as TFile;
         const content = await this.app.vault.cachedRead(file);

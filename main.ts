@@ -98,6 +98,13 @@ export default class WorkspacePlugin extends Plugin {
       callback: async () => {
         const workspaceRoot = this.settings.workspaceRoot;
         const path = getDailyPlanPath(workspaceRoot);
+
+        // 确保日计划文件夹存在
+        const dailyPlanFolder = `${workspaceRoot}/日计划`;
+        if (!fileExists(this.app, dailyPlanFolder)) {
+          await this.app.vault.createFolder(dailyPlanFolder);
+        }
+
         const existing = this.app.vault.getAbstractFileByPath(path);
         if (existing) {
           this.app.workspace.openLinkText(path, "");
@@ -111,10 +118,17 @@ export default class WorkspacePlugin extends Plugin {
               "本周计划未创建",
               "是否先创建本周计划？",
               async () => {
+                // 确保周计划文件夹存在
+                const weeklyPlanFolder = `${workspaceRoot}/周计划`;
+                if (!fileExists(this.app, weeklyPlanFolder)) {
+                  await this.app.vault.createFolder(weeklyPlanFolder);
+                }
+
                 // 创建周计划
                 const planContent = getWeeklyPlanTemplate();
                 await this.app.vault.create(weeklyPlanPath, planContent);
                 new Notice("本周计划已创建");
+
                 // 创建日计划
                 const content = getDailyPlanTemplate(weeklyPlanPath);
                 const file = await this.app.vault.create(path, content);
@@ -142,6 +156,13 @@ export default class WorkspacePlugin extends Plugin {
       callback: async () => {
         const workspaceRoot = this.settings.workspaceRoot;
         const path = getWeeklyPlanPath(workspaceRoot);
+
+        // 确保周计划文件夹存在
+        const weeklyPlanFolder = `${workspaceRoot}/周计划`;
+        if (!fileExists(this.app, weeklyPlanFolder)) {
+          await this.app.vault.createFolder(weeklyPlanFolder);
+        }
+
         const existing = this.app.vault.getAbstractFileByPath(path);
         if (existing) {
           this.app.workspace.openLinkText(path, "");

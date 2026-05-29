@@ -227,10 +227,13 @@ export class ActionTab {
     const card = container.createDiv({ cls: "workspace-card" });
     card.createEl("h3", { text: "本周计划" });
 
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+
     const now = new Date();
     const weekNum = this.getWeekNumber(now);
     const year = now.getFullYear();
-    const planPath = `周计划/${year}-W${weekNum.toString().padStart(2, "0")}-本周计划.md`;
+    const planPath = `${workspaceRoot}/周计划/${year}-W${weekNum.toString().padStart(2, "0")}-本周计划.md`;
 
     if (fileExists(this.app, planPath)) {
       const file = this.app.vault.getAbstractFileByPath(planPath) as TFile;
@@ -266,7 +269,11 @@ export class ActionTab {
     const card = container.createDiv({ cls: "workspace-card" });
     card.createEl("h3", { text: "学习进度" });
 
-    const stats = getLearningStats(this.app);
+    const settings = (this.app as any).plugins?.plugins?.["worktop"]?.settings;
+    const workspaceRoot = settings?.workspaceRoot || "工作台";
+    const learningStatusField = settings?.fieldNames?.learningStatus || "学习状态";
+
+    const stats = getLearningStats(this.app, learningStatusField);
     const statsEl = card.createDiv({ cls: "workspace-learning-stats" });
 
     const colors: Record<string, string> = {
@@ -278,10 +285,57 @@ export class ActionTab {
 
     Object.entries(stats).forEach(([status, count]) => {
       const statItem = statsEl.createDiv({ cls: "workspace-stat-item" });
+      statItem.style.cursor = "pointer";
       const dot = statItem.createSpan({ cls: "workspace-stat-dot" });
       dot.style.background = colors[status];
       statItem.createSpan({ text: `${status}: ${count}` });
+
+      // 点击生成学习状态文档
+      statItem.addEventListener("click", async () => {
+        await this.generateLearningStatusDoc(status, learningStatusField, workspaceRoot);
+      });
     });
+  }
+
+  // 生成学习状态文档
+  private async generateLearningStatusDoc(status: string, learningStatusField: string, workspaceRoot: string): Promise<void> {
+    const docPath = `${workspaceRoot}/学习状态-${status}.md`;
+
+    const files = this.app.vault.getMarkdownFiles().filter(file => {
+      const cache = this.app.metadataCache.getFileCache(file);
+      return cache?.frontmatter?.[learningStatusField] === status;
+    });
+
+    const today = new Date();
+    let content = `# 学习状态：${status}\n\n`;
+    content += `> 生成时间：${today.toLocaleString()}\n\n`;
+    content += `共 ${files.length} 个文档\n\n`;
+
+    files.forEach(file => {
+      const cache = this.app.metadataCache.getFileCache(file);
+      const fm = cache?.frontmatter;
+      content += `- [[${file.path}]]`;
+      if (fm?.type) content += ` (${fm.type})`;
+      content += `\n`;
+    });
+
+    try {
+      // 确保文件夹存在
+      if (!fileExists(this.app, workspaceRoot)) {
+        await this.app.vault.createFolder(workspaceRoot);
+      }
+
+      const existing = this.app.vault.getAbstractFileByPath(docPath);
+      if (existing) {
+        await this.app.vault.modify(existing as TFile, content);
+      } else {
+        await this.app.vault.create(docPath, content);
+      }
+      this.app.workspace.openLinkText(docPath, "");
+    } catch (error) {
+      new Notice(`生成文档失败: ${error.message}`);
+      console.error("生成学习状态文档失败:", error);
+    }
   }
 
   private renderRecentModified(container: HTMLElement): void {

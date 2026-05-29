@@ -107,7 +107,7 @@ export function getOverdueTopics(app: App, topicFolder: string = "事项"): Topi
   return overdue;
 }
 
-export function getLearningStats(app: App): Record<string, number> {
+export function getLearningStats(app: App, learningStatusField: string = "学习状态"): Record<string, number> {
   const stats: Record<string, number> = {
     待阅读: 0,
     已阅读: 0,
@@ -117,8 +117,8 @@ export function getLearningStats(app: App): Record<string, number> {
 
   app.vault.getMarkdownFiles().forEach((file) => {
     const cache = app.metadataCache.getFileCache(file);
-    if (cache?.frontmatter?.学习状态) {
-      const status = cache.frontmatter.学习状态;
+    if (cache?.frontmatter?.[learningStatusField]) {
+      const status = cache.frontmatter[learningStatusField];
       if (status in stats) {
         stats[status]++;
       }
