@@ -130,6 +130,7 @@ function getNodeDoc(domainName: string, domainFile: string, modules: { name: str
 tags:
   - 节点
 created: ${today}
+学习状态: 待阅读
 ---
 
 # ${domainName}
@@ -153,6 +154,7 @@ function getModuleNodeDoc(domainName: string, moduleName: string, moduleFile: st
 tags:
   - 节点
 created: ${today}
+学习状态: 待阅读
 ---
 
 # ${moduleName}
