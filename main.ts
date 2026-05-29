@@ -1,7 +1,7 @@
 import { Plugin, Notice } from "obsidian";
 import { WorkspaceView, VIEW_TYPE_WORKSPACE } from "./src/views/WorkspaceView";
 import { CreateNoteModal } from "./src/modals/CreateNoteModal";
-import { createDailyPlan, createWeeklyPlan } from "./src/services/PlanService";
+import { createDailyPlan, createWeeklyPlan, createDiary } from "./src/services/PlanService";
 import { initWorkspace } from "./src/services/InitService";
 import { registerPropertyTypes, registerEditorSuggests } from "./src/services/PropertyService";
 import { WorkspaceSettingTab } from "./src/settings/PluginSettings";
@@ -50,6 +50,12 @@ export default class WorkspacePlugin extends Plugin {
       id: "create-weekly-plan",
       name: "创建本周计划",
       callback: () => createWeeklyPlan(this.app),
+    });
+
+    this.addCommand({
+      id: "create-diary",
+      name: "创建日记",
+      callback: () => createDiary(this.app),
     });
 
     this.addCommand({

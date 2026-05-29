@@ -5,7 +5,9 @@ import {
   getDailyPlanPath,
   getWeeklyPlanTemplate,
   getWeeklyPlanPath,
+  getDiaryTemplate,
 } from "../utils/templates";
+import { moment } from "obsidian";
 import { fileExists, ensureFolder } from "../utils/dataview";
 import { getFolderPath } from "../config/accessors";
 
@@ -112,4 +114,26 @@ export async function addDailyPlanLinkToWeeklyPlan(
   } catch (error) {
     console.error("添加日计划链接到周计划失败:", error);
   }
+}
+
+/**
+ * 创建日记
+ */
+export async function createDiary(app: App): Promise<void> {
+  const diaryFolder = getFolderPath(app, "diary");
+  const today = moment().format("YYYY-MM-DD");
+  const path = `${diaryFolder}/${today}.md`;
+
+  await ensureFolder(app, diaryFolder);
+
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing) {
+    app.workspace.openLinkText(path, "");
+    return;
+  }
+
+  const content = getDiaryTemplate(app);
+  const file = await app.vault.create(path, content);
+  app.workspace.openLinkText(file.path, "");
+  new Notice("日记已创建");
 }

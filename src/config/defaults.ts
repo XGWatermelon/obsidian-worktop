@@ -78,6 +78,7 @@ export const DEFAULT_CONFIG: AppConfig = {
       { id: "writing-mgmt", label: "写作管理", folderKey: "generatedDocs", docName: "{date}-写作管理" },
       { id: "learning-stats", label: "学习统计", folderKey: "generatedDocs", docName: "{date}-学习统计" },
       { id: "recent-activity", label: "最近动态", folderKey: "generatedDocs", docName: "{date}-最近动态" },
+      { id: "diary", label: "写日记", folderKey: "diary" },
     ],
   },
 

@@ -10,6 +10,7 @@ import {
   generateLearningStatsDoc,
   generateRecentActivity,
 } from "../services/WorkflowService";
+import { createDiary } from "../services/PlanService";
 
 export class QuickActions {
   private container: HTMLElement;
@@ -86,6 +87,9 @@ export class QuickActions {
         break;
       case "recent-activity":
         await generateRecentActivity(this.app);
+        break;
+      case "diary":
+        await createDiary(this.app);
         break;
     }
   }
