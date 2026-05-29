@@ -11,7 +11,6 @@ import {
   getDomains,
   getStatuses,
   getStatusColor,
-  getRootFolder,
   getFolderPath,
 } from "../../config/accessors";
 
@@ -253,8 +252,7 @@ export class AnalysisTab {
 
   // 生成领域统计文档
   private async generateDomainDoc(domain: string): Promise<void> {
-    const workspaceRoot = getRootFolder(this.app);
-    const docPath = `${workspaceRoot}/领域统计-${domain}.md`;
+    const docPath = `${getFolderPath(this.app, "generatedDocs")}/领域/领域统计-${domain}.md`;
     const learningStatuses = getStatuses(this.app, "learning");
 
     const stats = getDomainStats(this.app, domain);
@@ -327,8 +325,7 @@ export class AnalysisTab {
 
   // 生成模块清单文档
   private async generateModuleDoc(domainName: string, moduleName: string): Promise<void> {
-    const workspaceRoot = getRootFolder(this.app);
-    const docPath = `${workspaceRoot}/模块清单-${moduleName}.md`;
+    const docPath = `${getFolderPath(this.app, "generatedDocs")}/模块/模块清单-${moduleName}.md`;
     const learningStatuses = getStatuses(this.app, "learning");
 
     const domainFiles = getDomainFiles(this.app, domainName);
@@ -391,8 +388,7 @@ export class AnalysisTab {
 
   // 生成学习状态文档
   private async generateLearningStatusDoc(status: string): Promise<void> {
-    const workspaceRoot = getRootFolder(this.app);
-    const docPath = `${workspaceRoot}/学习状态-${status}.md`;
+    const docPath = `${getFolderPath(this.app, "generatedDocs")}/学习状态/学习状态-${status}.md`;
     const learningStatusField = "学习状态";
 
     const allFiles = this.app.vault.getMarkdownFiles();

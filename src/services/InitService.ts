@@ -6,6 +6,7 @@ import {
   getWeeklyPlanTemplate,
   getTopicTemplate,
   getDiaryTemplate,
+  getNodeTemplate,
 } from "../utils/templates";
 
 const folderDemos: Record<string, (app: App) => { name: string; content: string }> = {
@@ -35,13 +36,8 @@ const folderDemos: Record<string, (app: App) => { name: string; content: string 
 `,
   }),
   nodes: () => ({
-    name: "README.md",
-    content: `# 知识图谱节点
-
-存放知识图谱的节点文件。每个文件代表一个独立的知识点。
-
-学习分析标签页的「节点图谱」会统计此文件夹中的内容。
-`,
+    name: "demo-节点-模板.md",
+    content: getNodeTemplate("示例节点", "这是一个节点模板，用于记录独立的知识点概念。"),
   }),
   generatedDocs: () => ({
     name: "README.md",
@@ -133,7 +129,6 @@ function getNodeDoc(domainName: string, domainFile: string, modules: { name: str
   return `---
 tags:
   - 节点
-  - ${domainName.toLowerCase()}
 created: ${today}
 ---
 
@@ -157,8 +152,6 @@ function getModuleNodeDoc(domainName: string, moduleName: string, moduleFile: st
   return `---
 tags:
   - 节点
-  - ${domainName.toLowerCase()}
-  - ${moduleName.toLowerCase()}
 created: ${today}
 ---
 

@@ -204,3 +204,30 @@ export function getTopicPath(app: App, title: string, type?: string): string {
   const subFolder = type ? `${topicFolder}/${type}` : topicFolder;
   return `${subFolder}/${today}-${safeTitle}.md`;
 }
+
+// 节点模板
+export function getNodeTemplate(title: string, description?: string): string {
+  const today = moment().format("YYYY-MM-DD");
+
+  return `---
+tags:
+  - 节点
+created: ${today}
+updated: ${today}
+---
+
+# ${title}
+
+${description ? `> ${description}\n` : ""}
+## 概念说明
+
+
+
+## 关联笔记
+
+
+
+## 参考资料
+
+`;
+}

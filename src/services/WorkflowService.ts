@@ -28,7 +28,7 @@ function getDocPath(app: App, workflowId: string): string {
   const resolved = docName.replace(/\{date\}/g, moment().format("YYYY-MM-DD"));
   const folderKey = wf?.folderKey || "generatedDocs";
   const folder = getFolderPath(app, folderKey);
-  return `${folder}/${resolved}.md`;
+  return `${folder}/工作流/${resolved}.md`;
 }
 
 async function saveAndOpen(app: App, path: string, content: string): Promise<void> {
